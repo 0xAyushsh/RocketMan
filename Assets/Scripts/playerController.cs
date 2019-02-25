@@ -5,9 +5,24 @@ using UnityEngine;
 public class playerController : MonoBehaviour {
     //variables
     public float maxSpeed;
+
+    //jumping variables
+    bool grounded = false;
+    float groundCheckRadius = 0.2f;
+    public LayerMask groundLayer;
+    public Transform groundCheck;
+    public float jumpHeight;
+
+
     Rigidbody2D myRb;
     Animator myAnim;
     bool facingRight;
+
+    //for shooting
+    public Transform gunTip;
+    public GameObject bullet;
+    float fireRate = 0.5f;
+    float nextFire = 0f;
 
 	// Use this for initialization
 	void Start () {
@@ -15,9 +30,27 @@ public class playerController : MonoBehaviour {
         myAnim = GetComponent<Animator>();
         facingRight = true;
 	}
-	
-	// Update is called once per frame
-	void FixedUpdate () {
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (grounded && Input.GetAxis("Jump")>0) {
+            grounded = false;
+            myAnim.SetBool("isGrounded", grounded);
+            myRb.AddForce(new Vector2(0, jumpHeight));
+        }
+
+        //player shooting
+        if (Input.GetAxisRaw("Fire1") > 0) fireRocket();
+    }
+    void FixedUpdate () {
+        //check if we are grounded - if no then we are falling
+
+        grounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        myAnim.SetBool("isGrounded", grounded);
+
+        myAnim.SetFloat("verticalSpeed", myRb.velocity.y);
+
         float move = Input.GetAxis("Horizontal");
         myAnim.SetFloat("speed", Mathf.Abs(move));
         myRb.velocity = new Vector2(move * maxSpeed, myRb.velocity.y);
@@ -35,5 +68,16 @@ public class playerController : MonoBehaviour {
         Vector3 theScale = transform.localScale;
         theScale.x *= -1;
         transform.localScale = theScale;
+    }
+
+    void fireRocket(){
+        if(Time.time > nextFire){
+            nextFire = Time.time + fireRate;
+            if (facingRight) {
+                Instantiate(bullet, gunTip.position, Quaternion.Euler(new Vector3(0,0,0)));
+            }else if (!facingRight){
+                Instantiate(bullet, gunTip.position, Quaternion.Euler(new Vector3(0, 0, 180f)));
+            }
+        }
     }
 }
